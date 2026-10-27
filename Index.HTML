@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MLBB Retribution Battle Simulator & Tactics Center</title>
+  <style>
+    :root {
+      --bg-dark: #0a0e17;
+      --bg-card: #121824;
+      --border-color: #2a354d;
+      --primary-gold: #ffd700;
+      --retri-blue: #00e5ff;
+      --hp-green: #00ff66;
+      --hp-red: #ff3366;
+      --text-main: #f0f4f8;
+      --text-muted: #8a99ad;
+      --purple-accent: #9d4edd;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      color: var(--primary-gold);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 5px;
+    }
+
+    .main-container {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .main-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    /* Battle Pit Arena */
+    .arena-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .target-selector {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .btn-target {
+      padding: 8px 18px;
+      border: 1px solid var(--border-color);
+      background: #1a2333;
+      color: var(--text-muted);
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+
+    .btn-target.active {
+      background: var(--primary-gold);
+      color: #000;
+      border-color: var(--primary-gold);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    }
+
+    #battleCanvas {
+      background: radial-gradient(circle, #1a2436 0%, #0d121c 100%);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+      width: 100%;
+      height: 380px;
+      max-width: 650px;
+    }
+
+    /* Controls & Buttons */
+    .action-controls {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-action {
+      flex: 1;
+      max-width: 200px;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1.05rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+
+    .btn-action:active {
+      transform: scale(0.96);
+    }
+
+    .btn-skill {
+      background: linear-gradient(135deg, #3a86ff, #0056b3);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(58, 134, 255, 0.4);
+    }
+
+    .btn-retri {
+      background: linear-gradient(135deg, #00f2fe, #4facfe);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.5);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #00b09b, #96c93d);
+      color: #fff;
+      padding: 10px 25px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* Sidebar Control Panel */
+    .panel-group {
+      margin-bottom: 20px;
+    }
+
+    .panel-group h3 {
+      font-size: 0.9rem;
+      color: var(--primary-gold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 5px;
+    }
+
+    .control-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+
+    select, input[type="range"] {
+      background: #1a2333;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      outline: none;
+    }
+
+    select {
+      width: 140px;
+    }
+
+    .stats-board {
+      background: #0d121c;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .stats-value {
+      color: var(--retri-blue);
+      font-weight: bold;
+    }
+
+    /* Strategy / Explanations Section */
+    .strategy-section {
+      max-width: 1200px;
+      width: 100%;
+      margin-top: 25px;
+    }
+
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .factor-card {
+      background: #161e2e;
+      border-left: 4px solid var(--primary-gold);
+      padding: 15px;
+      border-radius: 6px;
+    }
+
+    .factor-card h4 {
+      color: var(--primary-gold);
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+    }
+
+    .factor-card p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Retribution Battle Simulator</h1>
+    <p>Train your timing, master skill-smite combos, and understand objective steal factors</p>
+  </header>
+
+  <div class="main-container">
+    
+    <!-- Arena Canvas & Controls -->
+    <div class="card arena-card">
+      <div class="target-selector">
+        <button class="btn-target active" onclick="setTarget('lord')">Evolved Lord</button>
+        <button class="btn-target" onclick="setTarget('turtle')">Turtle</button>
+      </div>
+
+      <canvas id="battleCanvas" width="650" height="380"></canvas>
+
+      <div class="action-controls">
+        <button class="btn-action btn-skill" onclick="triggerHeroSkill()">Hero Skill</button>
+        <button class="btn-action btn-retri" onclick="triggerRetri()">Retribution</button>
+      </div>
+    </div>
+
+    <!-- Configuration Panel -->
+    <div class="card">
+      <div class="panel-group">
+        <h3>Simulation Engine</h3>
+        <div style="text-align: center; margin-bottom: 15px;">
+          <button class="btn-start" onclick="startSimulation()">Restart Encounter</button>
+        </div>
+      </div>
+
+      <div class="panel-group">
+        <h3>Hero Setup</h3>
+        <div class="control-item">
+          <label>Jungler Hero:</label>
+          <select id="heroSelect" onchange="updateHeroSettings()">
+            <option value="balmond">Balmond (Execute S2)</option>
+            <option value="lancelot">Lancelot (S2 Burst)</option>
+            <option value="fanny">Fanny (Cable Sweep)</option>
+            <option value="martis">Martis (Ult Burst)</option>
+            <option value="hayabusa">Hayabusa (S1 Quad)</option>
+          </select>
+        </div>
+        <div class="control-item">
+          <label>Retri Level:</label>
+          <select id="retriLevel" onchange="updateRetriDamage()">
+            <option value="15">Lvl 15 (2830 Dmg)</option>
+            <option value="12">Lvl 12 (2400 Dmg)</option>
+            <option value="8">Lvl 8 (1800 Dmg)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel-group">
+        <h3>Environment Factors</h3>
+        <div class="control-item">
+          <label>Enemy DPS:</label>
+          <input type="range" id="dpsRange" min="500" max="4000" step="100" value="2200" oninput="updateDPSLabel()">
+        </div>
+        <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);" id="dpsLabel">2200 HP/sec</div>
+
+        <div class="control-item" style="margin-top: 10px;">
+          <label>Ping Latency:</label>
+          <input type="range" id="pingRange" min="10" max="150" step="5" value="30" oninput="updatePingLabel()">
+        </div>
+        <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);" id="pingLabel">30 ms</div>
+      </div>
+
+      <div class="panel-group">
+        <h3>Battle Metrics</h3>
+        <div class="stats-board">
+          <div class="stats-row"><span>Status:</span><span id="statStatus" class="stats-value">Ready</span></div>
+          <div class="stats-row"><span>Target HP:</span><span id="statHP" class="stats-value">0 / 0</span></div>
+          <div class="stats-row"><span>Retri Damage:</span><span id="statRetri" class="stats-value">2830</span></div>
+          <div class="stats-row"><span>Reaction Delay:</span><span id="statReaction" class="stats-value">0 ms</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Educational Factors Breakdown -->
+  <div class="strategy-section card">
+    <h3 style="color: var(--primary-gold); font-size: 1.1rem;">5 Critical Retribution Factors</h3>
+    <div class="strategy-grid">
+      <div class="factor-card">
+        <h4>1. Skill + Retri Combo</h4>
+        <p>Combining heavy damage skills (e.g., Balmond Ult, Lancelot S2) simultaneously with Retribution instantly elevates your secure threshold way beyond pure Retri true damage.</p>
+      </div>
+      <div class="factor-card">
+        <h4>2. Latency & Ping Delay</h4>
+        <p>A higher ping creates a server processing gap. If your ping is 80ms, you must cast your Retribution ~0.1 seconds earlier than the calculated HP threshold.</p>
+      </div>
+      <div class="factor-card">
+        <h4>3. Enemy DPS Burst Rate</h4>
+        <p>When multiple enemy heroes hit the Lord together, objective HP drops erratically. Anticipate HP decay speeds rather than reacting visually.</p>
+      </div>
+      <div class="factor-card">
+        <h4>4. True Damage Scaling</h4>
+        <p>Retribution deals True Damage based on Jungler level. Always check level leads before contesting objectives to know your upper hand.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Canvas & Game Variables
+    const canvas = document.getElementById('battleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentTarget = 'lord'; // 'lord' or 'turtle'
+    let maxHP = 18000;
+    let currentHP = 18000;
+    let retriDamage = 2830;
+    let enemyDPS = 2200;
+    let pingMs = 30;
+    
+    let isRunning = false;
+    let lastTime = 0;
+    let floatingTexts = [];
+    let heroSkillActive = false;
+    let heroSkillTimer = 0;
+    let heroSkillDamage = 1200;
+
+    const heroSkillMap = {
+      balmond: { damage: 1800, name: "Lethal Counter" },
+      lancelot: { damage: 1350, name: "Thorned Rose" },
+      fanny: { damage: 1100, name: "Steel Cable" },
+      martis: { damage: 1600, name: "Decimate" },
+      hayabusa: { damage: 1250, name: "Phantom Shuriken" }
+    };
+
+    function setTarget(target) {
+      currentTarget = target;
+      document.querySelectorAll('.btn-target').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      maxHP = currentTarget === 'lord' ? 18000 : 9000;
+      startSimulation();
+    }
+
+    function updateHeroSettings() {
+      const heroKey = document.getElementById('heroSelect').value;
+      heroSkillDamage = heroSkillMap[heroKey].damage;
+    }
+
+    function updateRetriDamage() {
+      const lvl = parseInt(document.getElementById('retriLevel').value);
+      retriDamage = Math.floor(520 + (lvl * 154));
+      document.getElementById('statRetri').textContent = retriDamage;
+    }
+
+    function updateDPSLabel() {
+      enemyDPS = parseInt(document.getElementById('dpsRange').value);
+      document.getElementById('dpsLabel').textContent = `${enemyDPS} HP/sec`;
+    }
+
+    function updatePingLabel() {
+      pingMs = parseInt(document.getElementById('pingRange').value);
+      document.getElementById('pingLabel').textContent = `${pingMs} ms`;
+    }
+
+    function startSimulation() {
+      currentHP = maxHP;
+      isRunning = true;
+      floatingTexts = [];
+      document.getElementById('statStatus').textContent = 'In Progress';
+      document.getElementById('statStatus').style.color = '#00ff66';
+      lastTime = performance.now();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function gameLoop(time) {
+      if (!isRunning) return;
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+
+      // Decay HP from simulated enemy DPS
+      if (currentHP > 0) {
+        currentHP -= enemyDPS * dt;
+        if (currentHP <= 0) {
+          currentHP = 0;
+          isRunning = false;
+          document.getElementById('statStatus').textContent = 'STOLEN BY ENEMY';
+          document.getElementById('statStatus').style.color = '#ff3366';
+        }
+      }
+
+      updateUI();
+      render();
+
+      if (isRunning) {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('statHP').textContent = `${Math.ceil(currentHP)} / ${maxHP}`;
+    }
+
+    function triggerHeroSkill() {
+      if (!isRunning) return;
+      setTimeout(() => {
+        if (!isRunning) return;
+        currentHP -= heroSkillDamage;
+        addFloatingText(`-${heroSkillDamage}`, canvas.width / 2, 140, '#3a86ff');
+        if (currentHP <= 0) {
+          currentHP = 0;
+          isRunning = false;
+          document.getElementById('statStatus').textContent = 'SECURED WITH SKILL!';
+          document.getElementById('statStatus').style.color = '#00e5ff';
+        }
+      }, pingMs);
+    }
+
+    function triggerRetri() {
+      if (!isRunning) return;
+      const startTime = performance.now();
+      
+      setTimeout(() => {
+        if (!isRunning) return;
+        const delay = Math.round(performance.now() - startTime);
+        document.getElementById('statReaction').textContent = `${delay} ms`;
+
+        if (currentHP <= retriDamage) {
+          currentHP = 0;
+          isRunning = false;
+          addFloatingText(`RETRI ${retriDamage}!`, canvas.width / 2, 120, '#00e5ff');
+          document.getElementById('statStatus').textContent = 'RETRI SECURED!';
+          document.getElementById('statStatus').style.color = '#ffd700';
+        } else {
+          currentHP -= retriDamage;
+          addFloatingText(`EARLY RETRI (-${retriDamage})`, canvas.width / 2, 120, '#ff3366');
+        }
+      }, pingMs);
+    }
+
+    function addFloatingText(text, x, y, color) {
+      floatingTexts.push({ text, x, y, alpha: 1.0, color });
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Mini Figure Target
+      const centerX = canvas.width / 2;
+      const centerY = 190;
+
+      if (currentTarget === 'lord') {
+        // Lord Body (Purple Glowing Figure)
+        ctx.save();
+        ctx.fillStyle = '#7b2cbf';
+        ctx.shadowColor = '#9d4edd';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 55, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Horns
+        ctx.fillStyle = '#c77dff';
+        ctx.beginPath();
+        ctx.moveTo(centerX - 35, centerY - 35);
+        ctx.lineTo(centerX - 60, centerY - 75);
+        ctx.lineTo(centerX - 20, centerY - 50);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(centerX + 35, centerY - 35);
+        ctx.lineTo(centerX + 60, centerY - 75);
+        ctx.lineTo(centerX + 20, centerY - 50);
+        ctx.fill();
+        ctx.restore();
+      } else {
+        // Turtle Body (Green Shell Figure)
+        ctx.save();
+        ctx.fillStyle = '#2a9d8f';
+        ctx.shadowColor = '#e9c46a';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Draw HP Bar
+      const barWidth = 320;
+      const barHeight = 22;
+      const barX = centerX - barWidth / 2;
+      const barY = 50;
+
+      // Background Bar
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(barX, barY, barWidth, barHeight);
+
+      // Current HP Fill
+      const hpRatio = Math.max(0, currentHP / maxHP);
+      ctx.fillStyle = hpRatio < (retriDamage / maxHP) ? '#00e5ff' : '#00ff66';
+      ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
+
+      // Retri Indicator Line
+      const retriRatio = retriDamage / maxHP;
+      const retriX = barX + (barWidth * retriRatio);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(retriX, barY - 5);
+      ctx.lineTo(retriX, barY + barHeight + 5);
+      ctx.stroke();
+
+      // Border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+      // Floating Combat Text
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        let ft = floatingTexts[i];
+        ctx.save();
+        ctx.globalAlpha = ft.alpha;
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 20px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+
+        ft.y -= 1;
+        ft.alpha -= 0.02;
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+    }
+
+    // Initialize
+    updateHeroSettings();
+    updateRetriDamage();
+    startSimulation();
+  </script>
+</body>
+</html>
